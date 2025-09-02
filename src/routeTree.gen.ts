@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateIndexRouteImport } from './routes/create/index'
 import { Route as UserIdIndexRouteImport } from './routes/$userId/index'
+import { Route as UserIdEditRouteImport } from './routes/$userId/edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,33 +29,42 @@ const UserIdIndexRoute = UserIdIndexRouteImport.update({
   path: '/$userId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UserIdEditRoute = UserIdEditRouteImport.update({
+  id: '/$userId/edit',
+  path: '/$userId/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$userId/edit': typeof UserIdEditRoute
   '/$userId': typeof UserIdIndexRoute
   '/create': typeof CreateIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$userId/edit': typeof UserIdEditRoute
   '/$userId': typeof UserIdIndexRoute
   '/create': typeof CreateIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$userId/edit': typeof UserIdEditRoute
   '/$userId/': typeof UserIdIndexRoute
   '/create/': typeof CreateIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$userId' | '/create'
+  fullPaths: '/' | '/$userId/edit' | '/$userId' | '/create'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$userId' | '/create'
-  id: '__root__' | '/' | '/$userId/' | '/create/'
+  to: '/' | '/$userId/edit' | '/$userId' | '/create'
+  id: '__root__' | '/' | '/$userId/edit' | '/$userId/' | '/create/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  UserIdEditRoute: typeof UserIdEditRoute
   UserIdIndexRoute: typeof UserIdIndexRoute
   CreateIndexRoute: typeof CreateIndexRoute
 }
@@ -82,11 +92,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UserIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$userId/edit': {
+      id: '/$userId/edit'
+      path: '/$userId/edit'
+      fullPath: '/$userId/edit'
+      preLoaderRoute: typeof UserIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  UserIdEditRoute: UserIdEditRoute,
   UserIdIndexRoute: UserIdIndexRoute,
   CreateIndexRoute: CreateIndexRoute,
 }

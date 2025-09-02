@@ -1,9 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/create/')({
-  component: RouteComponent,
-})
+import { CreateUserFeature } from '@/core/users/features/create.feature';
 
-function RouteComponent() {
-  return <div>Create New User</div>
-}
+export const Route = createFileRoute('/create/')({
+  component: CreateUserFeature,
+});

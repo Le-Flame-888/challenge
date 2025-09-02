@@ -1,10 +1,10 @@
 import { Outlet, createRootRouteWithContext } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanstackDevtools } from '@tanstack/react-devtools'
+import { TanstackDevtools } from '@tanstack/react-devtools';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-import Header from '../packages/components/Header'
+import Header from "@/packages/components/Header";
 
-import TanStackQueryDevtools from '../packages/tanstack-query/devtools'
 
 import type { QueryClient } from '@tanstack/react-query'
 
@@ -15,7 +15,11 @@ interface MyRouterContext {
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => (
     <>
-      <Outlet />
+      <Header />
+      <div style={{ padding: '16px' }}>
+        <Outlet />
+      </div>
+      <ReactQueryDevtools />
       <TanstackDevtools
         config={{
           position: 'bottom-left',
@@ -25,8 +29,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
             name: 'Tanstack Router',
             render: <TanStackRouterDevtoolsPanel />,
           },
-          TanStackQueryDevtools,
-        ]}
+                  ]}
       />
     </>
   ),

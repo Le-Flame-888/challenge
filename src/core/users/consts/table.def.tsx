@@ -1,5 +1,5 @@
 import { RenderRole } from '@/core/users/components/cells/role.cell';
-import type { UserType } from '@/core/users/schemas/user.schema';
+import type { UserType } from '@/core/users/types/user.type';
 import { dateTimeRender } from '@/packages/components/cells/dateRender';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';

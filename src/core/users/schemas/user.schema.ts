@@ -2,9 +2,10 @@ import { profileSchema } from "@/core/users/schemas/profile.schema";
 import z from "zod";
 
 export const userSchema = z.object({
-  id: z.string(),
-  email: z.string(),
+  id: z.number(),
+  email: z.string().email(),
   profile: profileSchema,
+  role: z.enum(['admin', 'user', 'guest']),
   isActive: z.boolean(),
 });
 

@@ -2,7 +2,7 @@
 import axios from "axios"
 
 const baseConfig = {
-  baseURL: `${import.meta.env.VITE_BASE_URL}/api/`,
+  baseURL: 'http://localhost:3001/',
   withCredentials: true,
   timeout: 10000,
   headers: {

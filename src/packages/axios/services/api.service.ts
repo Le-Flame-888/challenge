@@ -11,23 +11,41 @@ interface ApiConfig<Request> {
   query?: Record<string, string | number | boolean>;
 }
 
-export function api<Request, Response>(request: ApiConfig<Request>) {
-  return async (): Promise<Response> => {
-    let url = request.endpoint;
-    if (request.params) {
-      url = replaceUrlParams(request.endpoint, request.params);
+type ApiRequest<T> = { data?: T; params?: Record<string, any>; query?: Record<string, any> };
+
+export function api<Request, Response>(config: Omit<ApiConfig<Request>, 'request'>) {
+  return async (request?: ApiRequest<Request> | Request): Promise<{ data: Response, headers: any }> => {
+    let url = config.endpoint;
+            let data: Request | undefined;
+    let params: Record<string, any> | undefined;
+    let query: Record<string, any> | undefined;
+
+    if (request && typeof request === 'object' && ('data' in request || 'params' in request || 'query' in request)) {
+      const apiReq = request as ApiRequest<Request>;
+      data = apiReq.data;
+      params = apiReq.params;
+      query = apiReq.query;
+    } else {
+      data = request as Request;
     }
-    if (request.query) {
-      url += buildQueryString(request.query);
+
+    if (params) {
+      url = replaceUrlParams(config.endpoint, params);
     }
-    const config : AxiosRequestConfig = {
+
+    const queryParams = { ...config.query, ...query };
+    if (Object.keys(queryParams).length > 0) {
+      url += buildQueryString(queryParams);
+    }
+
+    const axiosConfig: AxiosRequestConfig = {
       url,
-      method: request.method,
-      data: request.request,
+      method: config.method,
+      data: data,
     };
-    const response = request.mode === "private"
-      ? await (await import("@/packages/axios/instances/private.instance")).default(config)
-      : await (await import("@/packages/axios/instances/public.instance")).default(config);
-    return response.data;
+    const response = config.mode === "private"
+      ? await (await import("@/packages/axios/instances/private.instance")).default(axiosConfig)
+      : await (await import("@/packages/axios/instances/public.instance")).default(axiosConfig);
+    return { data: response.data, headers: response.headers };
   }
 }
