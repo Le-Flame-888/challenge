@@ -1,11 +1,38 @@
-import { useState, useEffect } from 'react';
-import { Button, Stack, FormControlLabel, Box, MenuItem, TextField, Switch } from '@mui/material';
-import type { CreateUserType } from '@/core/users/types/user.type';
+import { 
+  Button, 
+  Stack, 
+  FormControlLabel, 
+  Box, 
+  MenuItem, 
+  TextField, 
+  Switch, 
+  Typography,
+  Paper,
+  FormHelperText
+} from '@mui/material';
+import { useForm, Controller } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import type { CreateUserType, UserType } from '@/core/users/types/user.type';
+
+const userSchema = yup.object().shape({
+  email: yup.string().email('Invalid email').required('Email is required'),
+  profile: yup.object({
+    firstName: yup.string().required('First name is required'),
+    lastName: yup.string().required('Last name is required'),
+    age: yup.number().min(0, 'Age must be positive').nullable(),
+  }),
+  role: yup.string().oneOf(['admin', 'user', 'guest']).required('Role is required'),
+  isActive: yup.boolean().default(true),
+});
+
+type FormData = yup.InferType<typeof userSchema>;
 
 interface UserFormProps {
   onSubmit: (data: CreateUserType) => void;
   isPending: boolean;
-  defaultValues?: Partial<CreateUserType>;
+  defaultValues?: Partial<UserType>;
+  submitButtonText?: string;
 }
 
 const roleOptions = [
@@ -14,111 +41,159 @@ const roleOptions = [
   { value: 'guest', label: 'Guest' },
 ];
 
-export function UserForm({ onSubmit, isPending, defaultValues }: UserFormProps) {
-  const [formData, setFormData] = useState<CreateUserType>({
-    profile: {
-      firstName: '',
-      lastName: '',
-      age: undefined,
+export function UserForm({ 
+  onSubmit, 
+  isPending, 
+  defaultValues,
+  submitButtonText = 'Submit'
+}: UserFormProps) {
+  const { 
+    control, 
+    handleSubmit, 
+    formState: { errors },
+    reset
+  } = useForm<FormData>({
+    resolver: yupResolver(userSchema),
+    defaultValues: {
+      email: defaultValues?.email || '',
+      profile: {
+        firstName: defaultValues?.profile?.firstName || '',
+        lastName: defaultValues?.profile?.lastName || '',
+        age: defaultValues?.profile?.age,
+      },
+      role: (defaultValues?.role as 'admin' | 'user' | 'guest') || 'user',
+      isActive: defaultValues?.isActive ?? true,
     },
-    email: '',
-    role: 'user',
-    isActive: false,
   });
 
-  useEffect(() => {
-    if (defaultValues) {
-      setFormData({
-        profile: {
-          firstName: defaultValues.profile?.firstName || '',
-          lastName: defaultValues.profile?.lastName || '',
-          age: defaultValues.profile?.age || undefined,
-        },
-        email: defaultValues.email || '',
-        role: defaultValues.role || 'user',
-        isActive: defaultValues.isActive || false,
-      });
-    }
-  }, [defaultValues]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData((prev) => ({
-        ...prev,
-        [parent]: { ...prev[parent as keyof typeof prev], [child]: value },
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value,
-      }));
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
+  const handleFormSubmit = (data: FormData) => {
+    onSubmit(data);
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
-      <Stack spacing={3}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <TextField
-            name="profile.firstName"
-            label="First Name"
-            value={formData.profile.firstName}
-            onChange={handleChange}
-            fullWidth
+    <Paper elevation={3} sx={{ p: 4, mt: 2 }}>
+      <form onSubmit={handleSubmit(handleFormSubmit)}>
+        <Stack spacing={3}>
+          <Controller
+            name="email"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <TextField
+                  {...field}
+                  label="Email"
+                  type="email"
+                  fullWidth
+                  error={!!errors.email}
+                  helperText={errors.email?.message}
+                />
+              </div>
+            )}
           />
-          <TextField
-            name="profile.lastName"
-            label="Last Name"
-            value={formData.profile.lastName}
-            onChange={handleChange}
-            fullWidth
+
+          <Stack direction="row" spacing={2}>
+            <Controller
+              name="profile.firstName"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="First Name"
+                  fullWidth
+                  error={!!errors.profile?.firstName}
+                  helperText={errors.profile?.firstName?.message}
+                />
+              )}
+            />
+            <Controller
+              name="profile.lastName"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Last Name"
+                  fullWidth
+                  error={!!errors.profile?.lastName}
+                  helperText={errors.profile?.lastName?.message}
+                />
+              )}
+            />
+          </Stack>
+
+          <Controller
+            name="profile.age"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="Age"
+                type="number"
+                fullWidth
+                value={field.value || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  field.onChange(value === '' ? null : Number(value));
+                }}
+                error={!!errors.profile?.age}
+                helperText={errors.profile?.age?.message}
+                inputProps={{ min: 0 }}
+              />
+            )}
           />
+
+          <Controller
+            name="role"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                select
+                label="Role"
+                fullWidth
+                {...field}
+                error={!!errors.role}
+                helperText={errors.role?.message}
+              >
+                {roleOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+
+          <Controller
+            name="isActive"
+            control={control}
+            render={({ field }) => (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={field.value}
+                    onChange={field.onChange}
+                    color="primary"
+                  />
+                }
+                label={field.value ? 'Active' : 'Inactive'}
+                labelPlacement="start"
+                sx={{ justifyContent: 'space-between', ml: 0, mr: 0 }}
+              />
+            )}
+          />
+
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            size="large"
+            fullWidth
+            disabled={isPending}
+            sx={{ mt: 2 }}
+          >
+            {isPending ? 'Saving...' : submitButtonText}
+          </Button>
         </Stack>
-        <TextField
-          name="email"
-          label="Email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          fullWidth
-        />
-        <TextField
-          name="profile.age"
-          label="Age (Optional)"
-          type="number"
-          value={formData.profile.age || ''}
-          onChange={handleChange}
-          fullWidth
-        />
-        <TextField
-          name="role"
-          label="Role"
-          select
-          value={formData.role}
-          onChange={handleChange}
-          fullWidth
-        >
-          {roleOptions.map((option) => (
-            <MenuItem key={option.value} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </TextField>
-        <FormControlLabel
-          control={<Switch name="isActive" checked={formData.isActive} onChange={handleChange} />}
-          label="Active"
-        />
-        <Button type="submit" variant="contained" disabled={isPending}>
-          {isPending ? 'Submitting...' : 'Submit'}
-        </Button>
-      </Stack>
-    </Box>
+      </form>
+    </Paper>
   );
 }

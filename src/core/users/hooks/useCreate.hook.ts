@@ -1,25 +1,60 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { USERS_API } from '@/core/users/consts/endpoints.enum';
 import { api } from '@/packages/axios';
 import type { CreateUserType } from '@/core/users/types/user.type';
 import { USERS_QUERY_KEY } from './useList.hook';
 
-export const useCreateUser = () => {
+interface UseCreateUserOptions {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}
+
+export const useCreateUser = (options?: UseCreateUserOptions) => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   
-    const createUserApi = api<CreateUserType, any>({
+  const createUserApi = api<CreateUserType, any>({
     method: 'POST',
     endpoint: USERS_API.CREATE,
     mode: 'private',
   });
 
   return useMutation({
-    mutationFn: (userData: CreateUserType) => createUserApi(userData),
+    mutationFn: async (userData: CreateUserType) => {
+      try {
+        const response = await createUserApi(userData);
+        return response.data;
+      } catch (error: unknown) {
+        const errorMessage = error && 
+          typeof error === 'object' && 
+          'response' in error && 
+          error.response && 
+          typeof error.response === 'object' &&
+          'data' in error.response &&
+          error.response.data &&
+          typeof error.response.data === 'object' &&
+          'message' in error.response.data
+            ? String(error.response.data.message)
+            : 'Failed to create user. Please try again.';
+            
+        throw new Error(errorMessage);
+      }
+    },
     onSuccess: () => {
+      // Invalidate and refetch users list
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
-      navigate({ to: '/' });
+      
+      // Call the success callback if provided
+      if (options?.onSuccess) {
+        options.onSuccess();
+      }
+    },
+    onError: (error: Error) => {
+      console.error('Error creating user:', error);
+      
+      // Call the error callback if provided
+      if (options?.onError) {
+        options.onError(error);
+      }
     },
   });
 };

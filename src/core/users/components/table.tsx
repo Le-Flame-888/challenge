@@ -8,7 +8,7 @@ import type { UserType } from "@/core/users/types/user.type";
 import { RoleCell } from './cells/RoleCell';
 
 interface UsersTableProps {
-  users: UserType[];
+  users: UserType[] | undefined | null;
   isLoading: boolean;
   rowCount: number;
   paginationModel: GridPaginationModel;
@@ -102,25 +102,33 @@ export function UsersTable({
     },
   ];
 
+  // Ensure users is always an array
+  const safeUsers = Array.isArray(users) ? users : [];
+
   return (
     <>
       <DataGrid
-      loading={isLoading}
-      rows={users}
-      columns={columns}
-      disableColumnResize
-      autoHeight
-      paginationMode="server"
-      rowCount={rowCount}
-      paginationModel={paginationModel}
-      onPaginationModelChange={onPaginationModelChange}
-      slotProps={{
-        loadingOverlay: {
-          variant: 'linear-progress',
-          noRowsVariant: 'skeleton',
-        },
-      }}
-    />
+        loading={isLoading}
+        rows={safeUsers.map(user => ({
+          ...user,
+          // Ensure id is a string as required by MUI DataGrid
+          id: String(user.id)
+        }))}
+        columns={columns}
+        disableColumnResize
+        autoHeight
+        paginationMode="server"
+        rowCount={rowCount}
+        paginationModel={paginationModel}
+        onPaginationModelChange={onPaginationModelChange}
+        getRowId={(row) => row.id}
+        slotProps={{
+          loadingOverlay: {
+            variant: 'linear-progress',
+            noRowsVariant: 'skeleton',
+          },
+        }}
+      />
       <ConfirmationDialog
         open={dialogOpen}
         onClose={closeDeleteDialog}

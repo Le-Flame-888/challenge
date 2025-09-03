@@ -1,7 +1,7 @@
 export const USERS_API = {
-  CREATE: '/users',
-  LIST: '/users',
-  READ: '/users/:userId',
-  UPDATE: '/users/:userId',
-  DELETE: '/users/:userId',
+  CREATE: '/api/users',
+  LIST: '/api/users',
+  READ: '/api/users/:userId',
+  UPDATE: '/api/users/:userId',
+  DELETE: '/api/users/:userId',
 }
