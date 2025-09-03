@@ -1,44 +1,55 @@
 import { UsersTable } from "@/core/users/components/table";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
-import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
-import TextField from "@mui/material/TextField";
 import { Link } from "@tanstack/react-router";
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import { useListUsers } from '../hooks/useList.hook';
 import { useDebounce } from '@/packages/hooks/useDebounce.hook';
 import { UsersTableSkeleton } from "@/core/users/components/table.skeleton";
-import { UserFilters } from '../components/UserFilters';
+import { UserSearch } from '../components/UserSearch';
 import type { UserType } from '@/core/users/types/user.type';
-import type { SelectChangeEvent } from '@mui/material';
 
 export function ListUsersFeature() {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
-  const [roleFilter, setRoleFilter] = useState<UserType['role'] | ''>('');
-  const [isActiveFilter, setIsActiveFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState<UserType['role'] | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<boolean | 'all'>('all');
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const { data, isLoading } = useListUsers({
+  const { data, isLoading, isFetching } = useListUsers({
     search: debouncedSearchQuery,
     page: paginationModel.page + 1,
     limit: paginationModel.pageSize,
-    role: roleFilter || null,
-    isActive: isActiveFilter === '' ? null : isActiveFilter === 'true',
+    role: roleFilter === 'all' ? null : roleFilter,
+    isActive: statusFilter === 'all' ? null : statusFilter,
   });
 
   const users = data?.data ?? [];
   const rowCount = data?.total ?? 0;
 
-  const handleRoleChange = (event: SelectChangeEvent<string>) => {
-    setRoleFilter(event.target.value as UserType['role'] | '');
-  };
+  // Reset to first page when filters change
+  useEffect(() => {
+    if (!isInitialLoad) {
+      setPaginationModel(prev => ({ ...prev, page: 0 }));
+    } else {
+      setIsInitialLoad(false);
+    }
+  }, [debouncedSearchQuery, roleFilter, statusFilter]);
 
-  const handleIsActiveChange = (event: SelectChangeEvent<string>) => {
-    setIsActiveFilter(event.target.value);
-  };
+  const handleSearch = useCallback((search: string) => {
+    setSearchQuery(search);
+  }, []);
+
+  const handleRoleFilter = useCallback((role: UserType['role'] | 'all') => {
+    setRoleFilter(role);
+  }, []);
+
+  const handleStatusFilter = useCallback((status: boolean | 'all') => {
+    setStatusFilter(status);
+  }, []);
 
   if (isLoading && !data) {
     return (
@@ -50,7 +61,7 @@ export function ListUsersFeature() {
 
   return (
     <Container>
-      <Stack spacing={2}>
+      <Stack spacing={3}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Stack spacing={0.5}>
             <h1 className="text-2xl font-bold">Users</h1>
@@ -60,23 +71,20 @@ export function ListUsersFeature() {
             <Button variant="contained">Add User</Button>
           </Link>
         </Stack>
-        <TextField
-          label="Search Users"
-          variant="outlined"
-          fullWidth
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+        
+        <UserSearch 
+          onSearch={handleSearch}
+          onRoleFilter={handleRoleFilter}
+          onStatusFilter={handleStatusFilter}
+          searchValue={searchQuery}
+          roleFilter={roleFilter}
+          statusFilter={statusFilter}
+          isLoading={isFetching}
         />
-        <UserFilters 
-          role={roleFilter} 
-          isActive={isActiveFilter} 
-          onRoleChange={handleRoleChange} 
-          onIsActiveChange={handleIsActiveChange} 
-        />
-        <Divider />
+
         <UsersTable 
           users={users} 
-          isLoading={isLoading}
+          isLoading={isLoading || isFetching}
           rowCount={rowCount}
           paginationModel={paginationModel}
           onPaginationModelChange={setPaginationModel}

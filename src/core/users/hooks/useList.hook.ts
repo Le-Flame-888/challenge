@@ -16,24 +16,31 @@ interface UseListUsersProps {
 
 export function useListUsers({ search, page = 1, limit = 10, role, isActive }: UseListUsersProps) {
   return useQuery({
-    queryKey: [USERS_QUERY_KEY.LIST, search, page, limit, role, isActive],
+    queryKey: [USERS_QUERY_KEY.LIST, { search, page, limit, role, isActive }],
     queryFn: async () => {
       const query: Record<string, any> = {
-        q: search,
         _page: page,
         _limit: limit,
       };
 
+      // Add search query if provided
+      if (search && search.trim() !== '') {
+        query.q = search.trim();
+      }
+
+      // Add role filter if provided
       if (role) {
         query.role = role;
       }
 
+      // Add status filter if provided
       if (isActive !== undefined && isActive !== null) {
         query.isActive = isActive;
       }
 
+      console.log('Making API request with query:', query);
+      
       const response = await listUserApi({ query });
-      console.log('API Response:', response);
       
       if (!response) {
         console.error('No response from API');
@@ -47,10 +54,11 @@ export function useListUsers({ search, page = 1, limit = 10, role, isActive }: U
         return { data: [], total: 0 };
       }
       
-      return { 
-        data, 
-        total: headers?.['x-total-count'] ? Number(headers['x-total-count']) : 0 
+      return {
+        data,
+        total: parseInt(headers['x-total-count'] || '0', 10),
       };
     },
+    keepPreviousData: true,
   });
 }
